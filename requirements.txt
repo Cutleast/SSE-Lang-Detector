@@ -1,0 +1,7 @@
+lingua-language-detector
+qtpy
+PySide6
+qtawesome
+nuitka
+pyperclip
+psutil

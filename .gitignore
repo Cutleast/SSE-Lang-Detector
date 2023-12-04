@@ -1,0 +1,9 @@
+.venv
+tests
+main.dist
+**.old
+__pycache__
+src/assets/config.json
+src/assets/dictionary.json
+src/Output
+*.code-workspace
