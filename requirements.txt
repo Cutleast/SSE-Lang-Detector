@@ -5,3 +5,4 @@ qtawesome
 nuitka
 pyperclip
 psutil
+requests

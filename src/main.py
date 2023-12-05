@@ -99,6 +99,9 @@ class MainApp(qtw.QApplication):
         except:
             pass
 
+        # Run Updater
+        Updater(self)
+
         self.root_widget = qtw.QWidget()
         self.root_widget.setObjectName("root")
         self.root.setCentralWidget(self.root_widget)
@@ -876,5 +879,7 @@ class MainApp(qtw.QApplication):
 
 
 if __name__ == "__main__":
+    from updater import Updater
+
     app = MainApp()
     app.exec()
