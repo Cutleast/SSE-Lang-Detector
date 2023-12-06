@@ -13,8 +13,6 @@ AUTHOR="Cutleast"
 LICENSE="Attribution-NonCommercial-NoDerivatives 4.0 International"
 UNUSED_FILES: list[Path] = [
     DIST_FOLDER / "assets" / "config.json",
-    DIST_FOLDER / "assets" / "icon_with_bg.svg",
-    DIST_FOLDER / "assets" / "icon.ico",
     # DIST_FOLDER / "assets" / "dictionary.json",
 ]
 
