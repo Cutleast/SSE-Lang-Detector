@@ -38,19 +38,21 @@ If you encountered an issue/error or you have a suggestion, create an issue unde
 
 ## 2. Code contributions
 
+### 1. Install requirements
+
 1. Install Python 3.11 (Make sure that you add it to PATH!)
 2. Clone repository
 3. Open terminal in repository folder
 4. Type in following command to install all requirements (Using a virtual environment is strongly recommended!):
    `pip install -r requirements.txt`
 
-### 3. Execute from source
+### 2. Execute from source
 
 1. Open terminal in src folder
 2. Execute main file
    `python main.py`
 
-### 4. Compile and build executable
+### 3. Compile and build executable
 
 1. Follow the steps on this page [Nuitka.net](https://nuitka.net/doc/user-manual.html#usage) to install a C Compiler
 2. Run `build.bat` with activated virtual environment from the root folder of this repo.
