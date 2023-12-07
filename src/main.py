@@ -47,7 +47,7 @@ class MainApp(qtw.QApplication):
     """
 
     name = "SSE Lang Detector"
-    version = "1.0.0"
+    version = "1.0.1"
 
     queue: Queue = None
     done_signal = qtc.Signal()
@@ -92,7 +92,6 @@ class MainApp(qtw.QApplication):
 
         self.root = qtw.QMainWindow()
         self.root.setWindowTitle(f"{self.name} v{self.version}")
-        # self.root.setWindowIcon(qtg.QIcon("./assets/icon.ico"))
         self.root.setWindowIcon(qtg.QIcon("./assets/icon.svg"))
         try:
             utils.apply_dark_titlebar(self.root)
@@ -292,6 +291,7 @@ class MainApp(qtw.QApplication):
         self.config_layout.addWidget(self.progress_bar, 2, 0, 1, 2)
 
         self.copy_button = qtw.QPushButton()
+        self.copy_button.setToolTip("Copy full log to clipboard")
         self.copy_button.setIcon(qta.icon("mdi6.content-copy", color="#ffffff"))
         self.copy_button.setIconSize(qtc.QSize(16, 16))
         self.copy_button.clicked.connect(lambda: copy(self.std_handler._content))
@@ -443,6 +443,12 @@ class MainApp(qtw.QApplication):
             json.dump(config, file, indent=4)
 
     def load_config(self):
+        """
+        Loads configuration file and
+        returns True for success and
+        False if there is no config file.
+        """
+
         if (config_file := Path("./assets/config.json").resolve()).is_file():
             config = json.loads(config_file.read_text())
 
@@ -456,6 +462,9 @@ class MainApp(qtw.QApplication):
             self.include_scripts_checkbox.setChecked(config["include_scripts"])
             self.include_bsas_checkbox.setChecked(config["include_bsas"])
 
+            return True
+        return False
+
     def get_paths(self):
         # Insert loadorder.txt path
         self.loadorder_path_entry.setText(
@@ -466,13 +475,22 @@ class MainApp(qtw.QApplication):
             )
         )
 
-        # Insert data folder path
-        reg_path = "SOFTWARE\\WOW6432Node\\Bethesda Softworks\\Skyrim Special Edition"
-        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, reg_path) as hkey:
-            installdir = Path(winreg.QueryValueEx(hkey, "installed path")[0])
+        try:
+            # Insert data folder path
+            reg_path = "SOFTWARE\\WOW6432Node\\Bethesda Softworks\\Skyrim Special Edition"
+            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, reg_path) as hkey:
+                installdir = Path(winreg.QueryValueEx(hkey, "installed path")[0])
 
-            if installdir.is_dir() and str(installdir) != ".":
-                self.data_folder_entry.setText(str(installdir / "Data"))
+                if installdir.is_dir() and str(installdir) != ".":
+                    self.data_folder_entry.setText(str(installdir / "Data"))
+        except FileNotFoundError:
+            self.log.error("Failed to get installation path from registry: Registry key not found!")
+
+            qtw.QMessageBox.critical(
+                self.root,
+                "Skyrim Installation not found!",
+                "Failed to get installation path from registry: Registry key not found!"
+            )
 
     def extract_mcms_from_bsas(self, bsa_archives: list[Path]):
         """
@@ -661,8 +679,8 @@ class MainApp(qtw.QApplication):
 
     def exec(self):
         self.root.showMaximized()
-        self.get_paths()
-        self.load_config()
+        if not self.load_config():
+            self.get_paths()
         self.load_files()
         self.loadorder_path_entry.textChanged.connect(self.load_files)
         self.data_folder_entry.textChanged.connect(self.load_files)
@@ -678,7 +696,8 @@ class MainApp(qtw.QApplication):
         self.include_bsas_checkbox.stateChanged.connect(
             lambda _: self.update_file_list()
         )
-        # self.update_file_list()
+        
+        self.log.info("Application started.")
 
         super().exec()
 
@@ -733,7 +752,6 @@ class MainApp(qtw.QApplication):
         self.browse_loadorder_button.setDisabled(True)
         self.data_folder_entry.setDisabled(True)
         self.browse_data_folder_button.setDisabled(True)
-        # self.config_widget.setDisabled(True)
         self.untranslated_num_label.setText("Untranslated Files: 0")
         self.untranslated_num = 0
 

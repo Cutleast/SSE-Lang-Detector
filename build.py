@@ -8,12 +8,12 @@ from pathlib import Path
 
 DIST_FOLDER = Path("main.dist").resolve()
 APPNAME="SSE Lang Detector"
-VERSION="1.0.0"
+VERSION="1.0.1"
 AUTHOR="Cutleast"
 LICENSE="Attribution-NonCommercial-NoDerivatives 4.0 International"
 UNUSED_FILES: list[Path] = [
     DIST_FOLDER / "assets" / "config.json",
-    # DIST_FOLDER / "assets" / "dictionary.json",
+    DIST_FOLDER / "assets" / "dictionary.json",
 ]
 
 print("Building with nuitka...")

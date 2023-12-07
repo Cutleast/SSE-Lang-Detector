@@ -71,15 +71,19 @@ class Updater(qtc.QObject):
         """
 
         url = f"https://raw.githubusercontent.com/{self.repo_owner}/{self.repo_name}/main/update.json"
-        response = requests.get(url, timeout=3)
-        if response.status_code == 200:
-            latest_version_json = response.content.decode(encoding="utf8", errors="ignore")
-            latest_version_data = json.loads(latest_version_json)
-            latest_version = latest_version_data["version"]
-            self.latest_version = semver.Version(latest_version)
-            self.download_url = latest_version_data["download_url"]
-        else:
-            self.log.error(f"Failed to request update. Status Code: {response.status_code}")
+        try:
+            response = requests.get(url, timeout=3)
+            if response.status_code == 200:
+                latest_version_json = response.content.decode(encoding="utf8", errors="ignore")
+                latest_version_data = json.loads(latest_version_json)
+                latest_version = latest_version_data["version"]
+                self.latest_version = semver.Version(latest_version)
+                self.download_url = latest_version_data["download_url"]
+            else:
+                self.log.error(f"Failed to request update. Status Code: {response.status_code}")
+                self.log.debug(f"Request URL: {url}")
+        except requests.exceptions.SSLError as ex:
+            self.log.error(f"Failed to request update. SSL Error: {ex}")
             self.log.debug(f"Request URL: {url}")
 
     def get_changelog(self):
@@ -90,15 +94,21 @@ class Updater(qtc.QObject):
         """
 
         url = f"https://raw.githubusercontent.com/{self.repo_owner}/{self.repo_name}/main/Changelog.md"
-        response = requests.get(url, timeout=3)
+        try:
+            response = requests.get(url, timeout=3)
 
-        if response.status_code == 200:
-            changelog = response.content.decode(encoding="utf8", errors="ignore")
+            if response.status_code == 200:
+                changelog = response.content.decode(encoding="utf8", errors="ignore")
 
-            return changelog
-        else:
-            self.log.error(f"Failed to request changelog. Status Code: {response.status_code}")
+                return changelog
+            else:
+                self.log.error(f"Failed to request changelog. Status Code: {response.status_code}")
+                self.log.debug(f"Request URL: {url}")
+
+                return f"Status Code: {response.status_code}"
+        except requests.exceptions.SSLError as ex:
+            self.log.error(f"Failed to request update. SSL Error: {ex}")
             self.log.debug(f"Request URL: {url}")
 
-            return f"Status Code: {response.status_code}"
+            return f"SSL Error: {ex}"
         
