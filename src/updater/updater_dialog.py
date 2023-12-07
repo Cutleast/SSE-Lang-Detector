@@ -23,6 +23,8 @@ class UpdaterDialog(qtw.QDialog):
     def __init__(self, app: MainApp, updater: Updater):
         super().__init__(app.root)
 
+        self.setWindowTitle("An Update is Available!")
+
         self.app = app
         self.updater = updater
 
@@ -32,7 +34,7 @@ class UpdaterDialog(qtw.QDialog):
         self.setLayout(vlayout)
 
         title_label = qtw.QLabel("An Update is Available to Download!")
-        title_label.setObjectName("title_label")
+        title_label.setObjectName("titlelabel")
         vlayout.addWidget(title_label)
 
         version_label = qtw.QLabel(

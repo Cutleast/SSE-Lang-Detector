@@ -47,7 +47,7 @@ class MainApp(qtw.QApplication):
     """
 
     name = "SSE Lang Detector"
-    version = "1.0.1"
+    version = "1.0.2"
 
     queue: Queue = None
     done_signal = qtc.Signal()

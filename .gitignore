@@ -6,4 +6,5 @@ __pycache__
 src/assets/config.json
 src/assets/dictionary.json
 src/Output
+src/temp
 *.code-workspace

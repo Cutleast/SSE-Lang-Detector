@@ -1,3 +1,6 @@
+# v1.0.2
+- Fixed updater stylesheet
+
 # v1.0.1
 
 - Catched updater SSL error

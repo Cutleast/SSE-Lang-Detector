@@ -8,7 +8,7 @@ from pathlib import Path
 
 DIST_FOLDER = Path("main.dist").resolve()
 APPNAME="SSE Lang Detector"
-VERSION="1.0.1"
+VERSION="1.0.2"
 AUTHOR="Cutleast"
 LICENSE="Attribution-NonCommercial-NoDerivatives 4.0 International"
 UNUSED_FILES: list[Path] = [

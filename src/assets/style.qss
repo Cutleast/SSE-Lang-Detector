@@ -81,7 +81,7 @@ QLabel#untranslated_num_label {
     font-family: Arial Black;
     font-size: 22px;
 }
-QLabel#plugin_name {
+QLabel#plugin_name, QLabel#relevant_label {
     font-family: Arial Black;
 }
 QLabel#plugin_name_untranslated {
@@ -120,8 +120,8 @@ QPushButton:disabled {
     color: #696969;
 }
 
-/* QSpinBox, QLineEdit */
-QSpinBox, QLineEdit {
+/* QSpinBox, QLineEdit, QTextEdit */
+QSpinBox, QLineEdit, QTextEdit {
     background-color: #2d2d2d;
     color: #ffffff;
     selection-background-color: #2ba577;
