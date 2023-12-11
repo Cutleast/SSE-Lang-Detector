@@ -1,3 +1,6 @@
+# v1.0.4
+- Catched updater connection error
+
 # v1.0.3
 - Fixed decompilation of PEX Scripts by updating Champollion to v1.3.2 (still experimental regarding string-filtering)
 
