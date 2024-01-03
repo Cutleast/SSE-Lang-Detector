@@ -1,7 +1,7 @@
 # v1.1.0
 
 - Added option to view file in Explorer to context menu (Vortex only, because of MO2's VFS)
-- Made "Hide translated" button toggleable
+- Made "Show only untranslated Files" button toggleable
 - Complete rework of Plugin Parser
   - Better String filtering and extraction of previously missed strings
 
