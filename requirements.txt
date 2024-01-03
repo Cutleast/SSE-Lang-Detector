@@ -6,3 +6,4 @@ nuitka
 pyperclip
 psutil
 requests
+semantic-version

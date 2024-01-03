@@ -72,14 +72,6 @@ class StdoutHandler(qtc.QObject):
             pass
 
 
-class ProgressBarProxyStyle(qtw.QProxyStyle):
-    def subElementRect(self, element, option, widget: qtw.QWidget):
-        rect = super().subElementRect(element, option, widget)
-        if element == qtw.QProxyStyle.ControlElement.CE_ProgressBar:
-            rect.moveCenter(option.rect.bottomRight())
-        return rect
-
-
 def apply_dark_titlebar(widget: qtw.QWidget):
     """
     Applies dark title bar to <widget>.

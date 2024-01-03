@@ -2,12 +2,16 @@
 Copyright (c) Cutleast
 """
 
+import sys
+
 from io import BufferedReader
 from pathlib import Path
 
+from .group import Group
+
 from .plugin import Plugin
-from .record import CELL_GRUP, DIAL, DIAL_GRUP, GRUP, Record
-from .subrecord import EDID
+from .record import Record
+from .subrecord import EDID, StringSubrecord
 
 
 class PluginParser:
@@ -29,6 +33,7 @@ class PluginParser:
     plugin_path: Path = None
     plugin_stream: BufferedReader = None
     parsed_data: Plugin = None
+    last_edid: str = None
 
     def __init__(self, plugin_path: Path):
         self.plugin_path = plugin_path
@@ -73,76 +78,33 @@ class PluginParser:
         except AttributeError:
             return None
 
-    @staticmethod
-    def extract_cell_strings(cell_group: CELL_GRUP):
-        """
-        Extracts strings from <cell_group>.
-        """
-
-        strings: list[dict[str, str]] = []
-
-        for cell_block in cell_group.cell_blocks:
-            for subblock in cell_block.subblocks:
-                record = subblock.CELL
-                edid = PluginParser.get_record_edid(record)
-                for subrecord in record.subrecords:
-                    if hasattr(subrecord, "string"):
-                        string: str = subrecord.string
-                        if string:
-                            strings.append(
-                                {
-                                    "editor_id": edid,
-                                    "type": f"{record.type} {subrecord.type}",
-                                    "string": string,
-                                }
-                            )
-
-        return strings
-
-    @staticmethod
-    def extract_group_strings(group: GRUP):
+    def extract_group_strings(self, group: Group):
         """
         Extracts strings from parsed <group>.
         """
 
         strings: list[dict[str, str]] = []
 
-        for record in group.records:
-            if isinstance(record, DIAL):
-                edid = PluginParser.get_record_edid(record)
-                for subrecord in record.subrecords:
-                    if hasattr(subrecord, "string"):
-                        string: str = subrecord.string
-                        if string:
-                            strings.append(
-                                {
-                                    "editor_id": edid,
-                                    "type": f"{record.type} {subrecord.type}",
-                                    "string": string,
-                                }
-                            )
+        if group.records is None:
+            _dict = group.__dict__.copy()
+            _dict.pop("data")
+            print(group.data[:64])
+            print(_dict)
+            sys.exit()
 
-                if record.GRUP:
-                    for dial_record in record.GRUP.records:
-                        for dial_subrecord in dial_record.subrecords:
-                            if hasattr(dial_subrecord, "string"):
-                                string: str = dial_subrecord.string
-                                if string:
-                                    strings.append(
-                                        {
-                                            "editor_id": edid,
-                                            "type": f"{dial_record.type} {dial_subrecord.type}",
-                                            "string": string,
-                                        }
-                                    )
-            elif isinstance(record, GRUP) and not isinstance(record, DIAL_GRUP):
-                strings += PluginParser.extract_group_strings(record)
+        for record in group.records:
+            if isinstance(record, Group):
+                strings += self.extract_group_strings(record)
             else:
-                edid = PluginParser.get_record_edid(record)
+                edid = self.get_record_edid(record)
+                if edid is None:
+                    edid = self.last_edid
+                else:
+                    self.last_edid = edid
                 for subrecord in record.subrecords:
-                    if hasattr(subrecord, "string"):
+                    if isinstance(subrecord, StringSubrecord):
                         string: str = subrecord.string
-                        if string:
+                        if string and string != edid:
                             strings.append(
                                 {
                                     "editor_id": edid,
@@ -159,19 +121,14 @@ class PluginParser:
         """
 
         if not self.parsed_data:
-            raise Exception("Plugin not parsed!")
+            self.parse_plugin()
 
         strings: dict[str, list[dict[str, str]]] = {}
 
         for group in self.parsed_data.groups:
-            if isinstance(group, CELL_GRUP):
-                current_group: list[dict[str, str]] = PluginParser.extract_cell_strings(
-                    group
-                )
-            else:
-                current_group: list[
-                    dict[str, str]
-                ] = PluginParser.extract_group_strings(group)
+            current_group: list[
+                dict[str, str]
+            ] = self.extract_group_strings(group)
 
             if current_group:
                 if group.label in strings:

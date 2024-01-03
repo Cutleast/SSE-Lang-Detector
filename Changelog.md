@@ -1,10 +1,20 @@
+# v1.1.0
+
+- Added option to view file in Explorer to context menu (Vortex only, because of MO2's VFS)
+- Made "Hide translated" button toggleable
+- Complete rework of Plugin Parser
+  - Better String filtering and extraction of previously missed strings
+
 # v1.0.4
+
 - Catched updater connection error
 
 # v1.0.3
+
 - Fixed decompilation of PEX Scripts by updating Champollion to v1.3.2 (still experimental regarding string-filtering)
 
 # v1.0.2
+
 - Fixed updater stylesheet
 
 # v1.0.1

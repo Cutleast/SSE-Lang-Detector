@@ -5,7 +5,9 @@ Copyright (c) Cutleast
 from dataclasses import dataclass
 from io import BufferedReader
 
-from .record import GRUP, Record
+from . import utilities as utils
+from .group import Group
+from .record import Record
 
 
 @dataclass
@@ -15,32 +17,15 @@ class Plugin:
     """
 
     data_stream: BufferedReader
-    parsed_data = None
-
-    def __repr__(self):
-        string = ""
-
-        string += f"File Header: {self.TES4}"
-
-        string += f"\n\nRecord Groups: {self.groups}\n"
-
-        return string
-
-    def __str__(self):
-        return self.__repr__()
+    header: Record = None
+    groups: list[Group] = None
 
     def parse(self):
-        self.groups: list[GRUP] = []
+        self.groups = []
 
-        self.data_stream.seek(4, 1)
+        self.header = Record(self.data_stream)
 
-        self.TES4 = Record(self.data_stream, "TES4").parse()
-
-        while self.data_stream.read(4) == b"GRUP":
-            self.groups.append(
-                GRUP(self.data_stream).parse()
-            )
+        while utils.peek(self.data_stream, 1):
+            self.groups.append(Group(self.data_stream))
 
         return self
-
-

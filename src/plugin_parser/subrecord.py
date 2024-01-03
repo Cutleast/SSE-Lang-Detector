@@ -2,15 +2,9 @@
 Copyright (c) Cutleast
 """
 
-import struct
-from io import BufferedReader
+from io import BufferedReader, BytesIO
 from . import utilities as utils
-from pathlib import Path
-import os
-
-
-if Path("invalid_strings.txt").is_file():
-    os.remove("invalid_strings.txt")
+from .datatypes import Integer, String, Float
 
 
 class Subrecord:
@@ -37,7 +31,7 @@ class Subrecord:
         string += "\n\t\t}"
 
         return string
-    
+
     def __str__(self):
         return str(self.__dict__)
 
@@ -47,15 +41,10 @@ class Subrecord:
         except AttributeError:
             return 0
 
-    def parse(self):
-        self.size = int.from_bytes(
-            self.data_stream.read(2),
-            "little"
-        )
-
-        self.data = self.data_stream.read(
-            self.size
-        )
+    def parse(self, flags: dict[str, bool]):
+        self.type = String.string(self.data_stream, 4)
+        self.size = Integer.uint16(self.data_stream)
+        self.data = self.data_stream.read(self.size)
 
         return self
 
@@ -67,26 +56,12 @@ class HEDR(Subrecord):
 
     type = "HEDR"
 
-    def parse(self):
-        self.size = int.from_bytes(
-            self.data_stream.read(2),
-            "little"
-        )
-
-        self.version = round(struct.unpack(
-            "f",
-            self.data_stream.read(4)
-        )[0], 2)
-
-        self.records_num = int.from_bytes(
-            self.data_stream.read(4),
-            "little"
-        )
-
-        self.next_object_id = int.from_bytes(
-            self.data_stream.read(4),
-            "little"
-        )
+    def parse(self, flags: dict[str, bool]):
+        self.type = String.string(self.data_stream, 4)
+        self.size = Integer.uint16(self.data_stream)
+        self.version = round(Float.float32(self.data_stream), 2)
+        self.records_num = Integer.uint32(self.data_stream)
+        self.next_object_id = Integer.uint32(self.data_stream)
 
         return self
 
@@ -98,50 +73,43 @@ class EDID(Subrecord):
 
     type = "EDID"
 
-    def parse(self):
-        self.size = int.from_bytes(
-            self.data_stream.read(2),
-            "little"
-        )
-
-        self.editor_id = self.data_stream.read(self.size).decode()[:-1]
+    def parse(self, flags: dict[str, bool]):
+        self.type = String.string(self.data_stream, 4)
+        self.size = Integer.uint16(self.data_stream)
+        self.editor_id = String.zstring(self.data_stream)
 
         return self
 
 
-class String(Subrecord):
+class StringSubrecord(Subrecord):
     """
     Class for string subrecords.
     """
 
     type = None
 
-    def parse(self):
-        self.size = int.from_bytes(
-            self.data_stream.read(2),
-            "little"
-        )
+    def parse(self, flags: dict[str, bool]):
+        self.type = String.string(self.data_stream, 4)
+        self.size = Integer.uint16(self.data_stream)
+        self.data = utils.peek(self.data_stream, self.size)
 
-        try:
-            self.string = self.data_stream.read(self.size)
-            decoded = self.string.decode()[:-1]
-            if utils.is_valid_string(decoded):
-                self.string = decoded
-            else:
-                # write string to txt file
-                with open("invalid_strings.txt", "a", encoding="utf8") as file:
-                    file.write(f"{self.string[:-1]}\n")
-
-                self.data = self.string
+        if flags["Localized"]:
+            string_id = String.string(self.data_stream, 4).removesuffix("\x00").strip()
+            self.string = string_id
+        else:
+            try:
+                string = String.string(self.data_stream, self.size).removesuffix("\x00").strip()
+                if utils.is_valid_string(string) or string.isnumeric():
+                    self.string = string
+                else:
+                    self.string = None
+            except UnicodeDecodeError:
                 self.string = None
-        except UnicodeDecodeError:
-            self.data = self.string
-            self.string = None
 
         return self
 
 
-class FULL(String):
+class FULL(StringSubrecord):
     """
     Class for FULL subrecord.
     """
@@ -149,7 +117,7 @@ class FULL(String):
     type = "FULL"
 
 
-class DESC(String):
+class DESC(StringSubrecord):
     """
     Class for DESC subrecord.
     """
@@ -157,7 +125,7 @@ class DESC(String):
     type = "DESC"
 
 
-class NAM1(String):
+class NAM1(StringSubrecord):
     """
     Class for NAM1 subrecord.
     """
@@ -165,7 +133,7 @@ class NAM1(String):
     type = "NAM1"
 
 
-class NNAM(String):
+class NNAM(StringSubrecord):
     """
     Class for NNAM subrecord.
     """
@@ -173,7 +141,7 @@ class NNAM(String):
     type = "NNAM"
 
 
-class CNAM(String):
+class CNAM(StringSubrecord):
     """
     Class for CNAM subrecord.
     """
@@ -181,7 +149,7 @@ class CNAM(String):
     type = "CNAM"
 
 
-class TNAM(String):
+class TNAM(StringSubrecord):
     """
     Class for TNAM subrecord.
     """
@@ -189,7 +157,7 @@ class TNAM(String):
     type = "TNAM"
 
 
-class RNAM(String):
+class RNAM(StringSubrecord):
     """
     Class for RNAM subrecord.
     """
@@ -197,7 +165,7 @@ class RNAM(String):
     type = "RNAM"
 
 
-class SHRT(String):
+class SHRT(StringSubrecord):
     """
     Class for SHRT subrecord.
     """
@@ -205,12 +173,20 @@ class SHRT(String):
     type = "SHRT"
 
 
-class DNAM(String):
+class DNAM(StringSubrecord):
     """
     Class for DNAM subrecord.
     """
 
     type = "DNAM"
+
+
+class ITXT(StringSubrecord):
+    """
+    Class for ITXT subrecord.
+    """
+
+    type = "ITXT"
 
 
 class MAST(Subrecord):
@@ -220,14 +196,10 @@ class MAST(Subrecord):
 
     type = "MAST"
 
-    def parse(self):
-        self.size = int.from_bytes(
-            self.data_stream.read(2),
-            "little"
-        )
-
-        self.file = self.data_stream.read(self.size)
-        self.file = self.file.decode()[:-1]
+    def parse(self, flags: dict[str, bool]):
+        super().parse(flags)
+        stream = BytesIO(self.data)
+        self.file = String.wzstring(stream)
 
         return self
 
@@ -239,16 +211,10 @@ class TIFC(Subrecord):
 
     type = "TIFC"
 
-    def parse(self):
-        self.size = int.from_bytes(
-            self.data_stream.read(2),
-            "little"
-        )
-
-        self.count = int.from_bytes(
-            self.data_stream.read(self.size),
-            "little"
-        )
+    def parse(self, flags: dict[str, bool]):
+        super().parse(flags)
+        stream = BytesIO(self.data)
+        self.count = Integer.uint32(stream)
 
         return self
 
@@ -267,4 +233,5 @@ SUBRECORD_MAPPING: dict[str, Subrecord] = {
     "DNAM": DNAM,
     "MAST": MAST,
     "TIFC": TIFC,
+    "ITXT": ITXT,
 }

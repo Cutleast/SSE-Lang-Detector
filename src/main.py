@@ -47,7 +47,7 @@ class MainApp(qtw.QApplication):
     """
 
     name = "SSE Lang Detector"
-    version = "1.0.4"
+    version = "1.1.0"
 
     queue: Queue = None
     done_signal = qtc.Signal()
@@ -67,6 +67,7 @@ class MainApp(qtw.QApplication):
     include_scripts: bool = None
     include_bsas: bool = None
     start_time: int = None
+    hide_translated: bool = False
 
     def __init__(self):
         super().__init__([])
@@ -160,14 +161,11 @@ class MainApp(qtw.QApplication):
         self.hide_translated_button.setDisabled(True)
 
         def hide_translated_files():
-            for rindex, _ in enumerate(self.file_list_table.rows):
-                file = self.all_files[rindex]
-                if file in self.relevant_files:
-                    self.file_list_table.setRowHidden(rindex, not file.untranslated_strings)
-                else:
-                    self.file_list_table.setRowHidden(rindex, True)
+            self.hide_translated = not self.hide_translated
+            self.update_file_list()
 
         self.hide_translated_button.clicked.connect(hide_translated_files)
+        self.hide_translated_button.setCheckable(True)
         self.left_col_layout.addRow(
             self.untranslated_num_label, self.hide_translated_button
         )
@@ -348,6 +346,12 @@ class MainApp(qtw.QApplication):
             open_external_action.setIconVisibleInMenu(True)
             open_external_action.triggered.connect(lambda: file.open_file())
 
+            open_explorer_action = menu.addAction("Open in Explorer (Vortex only)")
+            open_explorer_action.setIcon(qta.icon("fa5s.folder", color="#ffffff"))
+            open_explorer_action.triggered.connect(
+                lambda: os.system(f'explorer.exe /select,"{file.file_path}"')
+            )
+
             menu.exec(self.file_list_table.mapToGlobal(point))
 
         self.file_list_table.customContextMenuRequested.connect(on_context_menu)
@@ -397,7 +401,9 @@ class MainApp(qtw.QApplication):
                 file = self.all_files[rindex]
                 if file in self.relevant_files:
                     self.file_list_table.setRowHidden(
-                        rindex, cur_search.lower() not in name.lower()
+                        rindex,
+                        cur_search.lower() not in name.lower()
+                        or (self.hide_translated and not file.untranslated_strings),
                     )
         else:
             self.relevant_files.clear()
@@ -421,10 +427,14 @@ class MainApp(qtw.QApplication):
                 self.relevant_files.append(file)
                 if cur_search:
                     self.file_list_table.setRowHidden(
-                        rindex, cur_search.lower() not in file.display_name.lower()
+                        rindex,
+                        cur_search.lower() not in file.display_name.lower()
+                        or (self.hide_translated and not file.untranslated_strings),
                     )
                 else:
-                    self.file_list_table.setRowHidden(rindex, False)
+                    self.file_list_table.setRowHidden(
+                        rindex, (self.hide_translated and not file.untranslated_strings)
+                    )
 
     def save_config(self):
         config = {
@@ -477,19 +487,23 @@ class MainApp(qtw.QApplication):
 
         try:
             # Insert data folder path
-            reg_path = "SOFTWARE\\WOW6432Node\\Bethesda Softworks\\Skyrim Special Edition"
+            reg_path = (
+                "SOFTWARE\\WOW6432Node\\Bethesda Softworks\\Skyrim Special Edition"
+            )
             with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, reg_path) as hkey:
                 installdir = Path(winreg.QueryValueEx(hkey, "installed path")[0])
 
                 if installdir.is_dir() and str(installdir) != ".":
                     self.data_folder_entry.setText(str(installdir / "Data"))
         except FileNotFoundError:
-            self.log.error("Failed to get installation path from registry: Registry key not found!")
+            self.log.error(
+                "Failed to get installation path from registry: Registry key not found!"
+            )
 
             qtw.QMessageBox.critical(
                 self.root,
                 "Skyrim Installation not found!",
-                "Failed to get installation path from registry: Registry key not found!"
+                "Failed to get installation path from registry: Registry key not found!",
             )
 
     def extract_mcms_from_bsas(self, bsa_archives: list[Path]):
@@ -696,7 +710,7 @@ class MainApp(qtw.QApplication):
         self.include_bsas_checkbox.stateChanged.connect(
             lambda _: self.update_file_list()
         )
-        
+
         self.log.info("Application started.")
 
         super().exec()
