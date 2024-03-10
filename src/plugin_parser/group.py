@@ -3,12 +3,12 @@ Copyright (c) Cutleast
 """
 
 import os
-# import sys
 from enum import IntEnum
 from io import BufferedReader, BytesIO
 
-from .datatypes import Integer, String, Hex
+from .datatypes import Hex, Integer, String
 from .record import Record
+from .utilities import PARSE_WHITELIST
 
 
 class Group:
@@ -61,70 +61,74 @@ class Group:
 
         self.data = self.stream.read(len(self))
 
-        # Normal groups
-        if self.group_type == Group.GroupType.Normal:
-            self.label = String.string(BytesIO(self.label), 4)
+        match self.group_type:
+            # Normal groups
+            case Group.GroupType.Normal:
+                self.label = String.string(BytesIO(self.label), 4)
 
-            if self.label in GROUP_WHITELIST:
-                record_stream = BytesIO(self.data)
-                self.parse_records(record_stream)
-            else:
-                self.records = []
+                if self.label in PARSE_WHITELIST:
+                    record_stream = BytesIO(self.data)
+                    self.parse_records(record_stream)
+                else:
+                    self.records = []
 
-        # Dialogue Groups
-        elif self.group_type == Group.GroupType.TopicChildren:
-            self.label = Hex.hex(BytesIO(self.label), 4)
+            # Dialogue Groups
+            case Group.GroupType.TopicChildren:
+                self.label = Hex.hex(BytesIO(self.label), 4)
 
-            if "DIAL" in GROUP_WHITELIST:
-                record_stream = BytesIO(self.data)
-                self.parse_records(record_stream)
-            else:
-                self.records = []
+                if "DIAL" in PARSE_WHITELIST:
+                    record_stream = BytesIO(self.data)
+                    self.parse_records(record_stream)
+                else:
+                    self.records = []
 
-        # Worldspace Group
-        elif self.group_type == Group.GroupType.WorldChildren:
-            self.label = Hex.hex(BytesIO(self.label), 4)
-            self.parse_records(BytesIO(self.data))
+            # Worldspace Group
+            case Group.GroupType.WorldChildren:
+                self.label = Hex.hex(BytesIO(self.label), 4)
+                self.parse_records(BytesIO(self.data))
 
-        # Exterior Cells
-        elif self.group_type == Group.GroupType.ExteriorCellBlock:
-            label_stream = BytesIO(self.label)
-            self.grid = (
-                Integer.int16(label_stream),  # Y
-                Integer.int16(label_stream),  # X
-            )
-            group = Group(BytesIO(self.data))
-            self.records = group.records
-        elif self.group_type == Group.GroupType.ExteriorCellSubBlock:
-            label_stream = BytesIO(self.label)
-            self.grid = (
-                Integer.int16(label_stream),  # Y
-                Integer.int16(label_stream),  # X
-            )
-            self.parse_records(BytesIO(self.data))
+            # Exterior Cells
+            case Group.GroupType.ExteriorCellBlock:
+                label_stream = BytesIO(self.label)
+                self.grid = (
+                    Integer.int16(label_stream),  # Y
+                    Integer.int16(label_stream),  # X
+                )
+                self.parse_records(BytesIO(self.data))
 
-        # Interior Cells
-        elif self.group_type in [
-            Group.GroupType.InteriorCellBlock,
-            Group.GroupType.CellChildren,
-        ]:
-            self.block_number = Integer.int32(BytesIO(self.label))
-            group = Group(BytesIO(self.data))
-            self.records = group.records
-        elif self.group_type == Group.GroupType.InteriorCellSubBlock:
-            self.subblock_number = Integer.int32(BytesIO(self.label))
-            self.parse_records(BytesIO(self.data))
-        elif self.group_type in [
-            Group.GroupType.CellTemporaryChildren,
-            Group.GroupType.CellPersistentChildren,
-        ]:
-            self.label = Hex.hex(BytesIO(self.label), 4)
-            self.parse_records(BytesIO(self.data))
+            case Group.GroupType.ExteriorCellSubBlock:
+                label_stream = BytesIO(self.label)
+                self.grid = (
+                    Integer.int16(label_stream),  # Y
+                    Integer.int16(label_stream),  # X
+                )
+                self.parse_records(BytesIO(self.data))
 
-        # Unknown
-        else:
-            print(self.group_type)
-            self.label = self.label
+            # Interior Cells
+            case Group.GroupType.InteriorCellBlock:
+                self.block_number = Integer.int32(BytesIO(self.label))
+                self.parse_records(BytesIO(self.data))
+
+            case Group.GroupType.InteriorCellSubBlock:
+                self.subblock_number = Integer.int32(BytesIO(self.label))
+                self.parse_records(BytesIO(self.data))
+
+            # Cell Children
+            case Group.GroupType.CellChildren:
+                self.label = Hex.hex(BytesIO(self.label), 4)
+                self.parse_records(BytesIO(self.data))
+
+            case Group.GroupType.CellPersistentChildren:
+                self.parent_cell = Hex.hex(BytesIO(self.label), 4)
+                self.parse_records(BytesIO(self.data))
+
+            case Group.GroupType.CellTemporaryChildren:
+                self.parent_cell = Hex.hex(BytesIO(self.label), 4)
+                self.parse_records(BytesIO(self.data))
+
+            # Unknown
+            case _:
+                print("Unknown Group Type:", self.group_type)
 
         return self
 
@@ -141,46 +145,3 @@ class Group:
             self.records.append(record)
 
         return self
-
-
-# Whitelist for group types that are known to work
-GROUP_WHITELIST: list[str] = [
-    "ACTI",
-    "ARMO",
-    "ALCH",
-    "AMMO",
-    "BOOK",
-    "CELL",
-    "CLAS",
-    "CONT",
-    "DIAL",
-    "DOOR",
-    "ENCH",
-    "EXPL",
-    # "FACT",  # See above
-    "FLOR",
-    "FURN",
-    "HAZD",
-    "INGR",
-    "KEYM",
-    "LCTN",
-    "LSCR",
-    "MESG",
-    "MGEF",
-    "MISC",
-    "NOTE",
-    "NPC_",
-    "PERK",
-    "PROJ",
-    "QUST",
-    "RACE",
-    "SCRL",
-    "SHOU",
-    "SLGM",
-    "SPEL",
-    "TACT",
-    "TREE",
-    "WEAP",
-    "WOOP",
-    "WRLD",
-]

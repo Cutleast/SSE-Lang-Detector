@@ -2,8 +2,16 @@
 Copyright (c) Cutleast
 """
 
-
 from io import BufferedReader
+from pathlib import Path
+
+import jstyleson as json
+
+# Whitelist for record types that are known to work
+# And that contain strings that are visible in-game
+whitelist_path = Path(".") / "assets" / "parser_whitelist.json"
+with whitelist_path.open() as whitelist_file:
+    PARSE_WHITELIST: dict[str, list[str]] = json.load(whitelist_file)
 
 
 def peek(stream: BufferedReader, length: int):
@@ -27,20 +35,25 @@ CHAR_WHITELIST = [
 ]
 
 
-def is_path_like(text: str):
+def get_checksum(number: int):
     """
-    Checks if `text` is a path.
+    Returns horizontal checksum of `number` (sum of all digits).
     """
 
-    if "\\" not in text and "/" not in text:
-        if len(text) <= 4:
-            return False
-        elif text[-3] == "." or text[-4] == ".":
-            return True
-        else:
-            return False
-    else:
-        return True
+    number = abs(number)
+
+    return sum(int(digit) for digit in str(number))
+
+
+def is_camel_case(text: str):
+    """
+    Checks if `text` is camel case without spaces.
+    """
+
+    if " " in text:
+        return False
+
+    return any(char.isupper() for char in text[1:]) and not text.isupper()
 
 
 def is_valid_string(input_string: str):
@@ -51,7 +64,10 @@ def is_valid_string(input_string: str):
     if not input_string.strip():
         return False
 
-    if is_path_like(input_string):
+    if is_camel_case(input_string):
+        return False
+
+    if "_" in input_string and " " not in input_string:
         return False
 
     return all((c.isprintable() or c in CHAR_WHITELIST) for c in input_string)

@@ -3,8 +3,9 @@ Copyright (c) Cutleast
 """
 
 from io import BufferedReader, BytesIO
+
 from . import utilities as utils
-from .datatypes import Integer, String, Float
+from .datatypes import Float, Integer, String
 
 
 class Subrecord:
@@ -46,8 +47,6 @@ class Subrecord:
         self.size = Integer.uint16(self.data_stream)
         self.data = self.data_stream.read(self.size)
 
-        return self
-
 
 class HEDR(Subrecord):
     """
@@ -63,8 +62,6 @@ class HEDR(Subrecord):
         self.records_num = Integer.uint32(self.data_stream)
         self.next_object_id = Integer.uint32(self.data_stream)
 
-        return self
-
 
 class EDID(Subrecord):
     """
@@ -78,8 +75,6 @@ class EDID(Subrecord):
         self.size = Integer.uint16(self.data_stream)
         self.editor_id = String.zstring(self.data_stream)
 
-        return self
-
 
 class StringSubrecord(Subrecord):
     """
@@ -87,106 +82,23 @@ class StringSubrecord(Subrecord):
     """
 
     type = None
+    index: int | None = None
 
     def parse(self, flags: dict[str, bool]):
         self.type = String.string(self.data_stream, 4)
         self.size = Integer.uint16(self.data_stream)
         self.data = utils.peek(self.data_stream, self.size)
 
-        if flags["Localized"]:
-            string_id = String.string(self.data_stream, 4).removesuffix("\x00").strip()
-            self.string = string_id
-        else:
-            try:
-                string = String.string(self.data_stream, self.size).removesuffix("\x00").strip()
-                if utils.is_valid_string(string) or string.isnumeric():
-                    self.string = string
-                else:
-                    self.string = None
-            except UnicodeDecodeError:
+        try:
+            string = (
+                String.string(self.data_stream, self.size).removesuffix("\x00").strip()
+            )
+            if utils.is_valid_string(string) or string.isnumeric():
+                self.string = string
+            else:
                 self.string = None
-
-        return self
-
-
-class FULL(StringSubrecord):
-    """
-    Class for FULL subrecord.
-    """
-
-    type = "FULL"
-
-
-class DESC(StringSubrecord):
-    """
-    Class for DESC subrecord.
-    """
-
-    type = "DESC"
-
-
-class NAM1(StringSubrecord):
-    """
-    Class for NAM1 subrecord.
-    """
-
-    type = "NAM1"
-
-
-class NNAM(StringSubrecord):
-    """
-    Class for NNAM subrecord.
-    """
-
-    type = "NNAM"
-
-
-class CNAM(StringSubrecord):
-    """
-    Class for CNAM subrecord.
-    """
-
-    type = "CNAM"
-
-
-class TNAM(StringSubrecord):
-    """
-    Class for TNAM subrecord.
-    """
-
-    type = "TNAM"
-
-
-class RNAM(StringSubrecord):
-    """
-    Class for RNAM subrecord.
-    """
-
-    type = "RNAM"
-
-
-class SHRT(StringSubrecord):
-    """
-    Class for SHRT subrecord.
-    """
-
-    type = "SHRT"
-
-
-class DNAM(StringSubrecord):
-    """
-    Class for DNAM subrecord.
-    """
-
-    type = "DNAM"
-
-
-class ITXT(StringSubrecord):
-    """
-    Class for ITXT subrecord.
-    """
-
-    type = "ITXT"
+        except UnicodeDecodeError:
+            self.string = None
 
 
 class MAST(Subrecord):
@@ -198,6 +110,7 @@ class MAST(Subrecord):
 
     def parse(self, flags: dict[str, bool]):
         super().parse(flags)
+
         stream = BytesIO(self.data)
         self.file = String.wzstring(stream)
 
@@ -213,6 +126,7 @@ class TIFC(Subrecord):
 
     def parse(self, flags: dict[str, bool]):
         super().parse(flags)
+
         stream = BytesIO(self.data)
         self.count = Integer.uint32(stream)
 
@@ -222,16 +136,18 @@ class TIFC(Subrecord):
 SUBRECORD_MAPPING: dict[str, Subrecord] = {
     "HEDR": HEDR,
     "EDID": EDID,
-    "FULL": FULL,
-    "DESC": DESC,
-    "NAM1": NAM1,
-    "NNAM": NNAM,
-    "CNAM": CNAM,
-    "TNAM": TNAM,
-    "RNAM": RNAM,
-    "SHRT": SHRT,
-    "DNAM": DNAM,
+    "FULL": StringSubrecord,
+    "DESC": StringSubrecord,
+    "NAM1": StringSubrecord,
+    "NNAM": StringSubrecord,
+    "CNAM": StringSubrecord,
+    "TNAM": StringSubrecord,
+    "RNAM": StringSubrecord,
+    "SHRT": StringSubrecord,
+    "DNAM": StringSubrecord,
+    "ITXT": StringSubrecord,
+    "EPF2": StringSubrecord,
+    "EPFD": StringSubrecord,
     "MAST": MAST,
     "TIFC": TIFC,
-    "ITXT": ITXT,
 }

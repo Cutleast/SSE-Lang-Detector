@@ -89,8 +89,8 @@ class Updater(qtc.QObject):
         except requests.exceptions.SSLError as ex:
             self.log.error(f"Failed to request update. SSL Error: {ex}")
             self.log.debug(f"Request URL: {url}")
-        except requests.exceptions.ConnectionError as ex:
-            self.log.error(f"Failed to request update. Connection Error: {ex}")
+        except requests.exceptions.RequestException as ex:
+            self.log.error(f"Failed to request update. Request Exception: {ex}")
             self.log.debug(f"Request URL: {url}")
 
     def get_changelog(self):

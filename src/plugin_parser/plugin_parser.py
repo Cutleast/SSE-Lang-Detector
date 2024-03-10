@@ -2,13 +2,10 @@
 Copyright (c) Cutleast
 """
 
-import sys
-
 from io import BufferedReader
 from pathlib import Path
 
 from .group import Group
-
 from .plugin import Plugin
 from .record import Record
 from .subrecord import EDID, StringSubrecord
@@ -33,7 +30,6 @@ class PluginParser:
     plugin_path: Path = None
     plugin_stream: BufferedReader = None
     parsed_data: Plugin = None
-    last_edid: str = None
 
     def __init__(self, plugin_path: Path):
         self.plugin_path = plugin_path
@@ -85,33 +81,23 @@ class PluginParser:
 
         strings: list[dict[str, str]] = []
 
-        if group.records is None:
-            _dict = group.__dict__.copy()
-            _dict.pop("data")
-            print(group.data[:64])
-            print(_dict)
-            sys.exit()
-
         for record in group.records:
             if isinstance(record, Group):
                 strings += self.extract_group_strings(record)
             else:
                 edid = self.get_record_edid(record)
                 if edid is None:
-                    edid = self.last_edid
-                else:
-                    self.last_edid = edid
+                    edid = f"[{record.formid}]"
+
                 for subrecord in record.subrecords:
                     if isinstance(subrecord, StringSubrecord):
-                        string: str = subrecord.string
-                        if string and string != edid:
-                            strings.append(
-                                {
-                                    "editor_id": edid,
-                                    "type": f"{record.type} {subrecord.type}",
-                                    "string": string,
-                                }
-                            )
+                        if subrecord.string:
+                            string_data = {
+                                "editor_id": edid,
+                                "type": f"{record.type} {subrecord.type}",
+                                "string": subrecord.string,
+                            }
+                            strings.append(string_data)
 
         return strings
 
@@ -126,9 +112,7 @@ class PluginParser:
         strings: dict[str, list[dict[str, str]]] = {}
 
         for group in self.parsed_data.groups:
-            current_group: list[
-                dict[str, str]
-            ] = self.extract_group_strings(group)
+            current_group: list[dict[str, str]] = self.extract_group_strings(group)
 
             if current_group:
                 if group.label in strings:

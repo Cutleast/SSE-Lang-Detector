@@ -1,3 +1,8 @@
+# v1.1.1
+
+- Fixed TimeoutError when checking for updates
+- Further refined and improved Plugin Parser
+
 # v1.1.0
 
 - Added option to view file in Explorer to context menu (Vortex only, because of MO2's VFS)
