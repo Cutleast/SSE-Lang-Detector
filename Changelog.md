@@ -1,3 +1,8 @@
+# v1.1.2
+
+- Added post-scan notice about auto-translating a modlist with [SSE Auto Translator](https://www.nexusmods.com/skyrimspecialedition/mods/111491)
+- Relicensed CC-BY-NC-ND -> GNU General Public License v3.0
+
 # v1.1.1
 
 - Fixed TimeoutError when checking for updates
