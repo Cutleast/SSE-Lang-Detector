@@ -1,7 +1,7 @@
 """
 This file is part of SEE Lang Detector
 and falls under the license
-Attribution-NonCommercial-NoDerivatives 4.0 International.
+GNU General Public License v3.0.
 """
 
 from plugin_parser.plugin_parser import PluginParser

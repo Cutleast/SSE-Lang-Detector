@@ -1,7 +1,7 @@
 """
 Name: SSE Lang Detector
 Author: Cutleast
-License: Attribution-NonCommercial-NoDerivatives 4.0 International
+License: GNU General Public License v3.0
 Python Version: 3.11.2
 Qt Version: 6.5.2
 """

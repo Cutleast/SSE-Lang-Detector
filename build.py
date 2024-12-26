@@ -10,7 +10,7 @@ DIST_FOLDER = Path("main.dist").resolve()
 APPNAME="SSE Lang Detector"
 VERSION="1.1.1"
 AUTHOR="Cutleast"
-LICENSE="Attribution-NonCommercial-NoDerivatives 4.0 International"
+LICENSE="GNU General Public License v3.0"
 UNUSED_FILES: list[Path] = [
     DIST_FOLDER / "assets" / "config.json",
     DIST_FOLDER / "assets" / "dictionary.json",
