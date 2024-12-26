@@ -812,9 +812,31 @@ class MainApp(qtw.QApplication):
         self.data_folder_entry.setDisabled(False)
         self.browse_data_folder_button.setDisabled(False)
 
-        qtw.QMessageBox.information(
-            self.root, f"{self.name} v{self.version}", f"Scan complete in {end_time}!"
+        alert()
+        message_box = qtw.QMessageBox()
+        message_box.setWindowIcon(self.root.windowIcon())
+        message_box.setIconPixmap(qtg.QIcon("./assets/icons/sse-at.png").pixmap(48, 48))
+        message_box.setWindowTitle(f"{self.name} v{self.version}")
+        message_box.setText(
+            f"Scan complete in {end_time}!\n"
+            "If you want to translate your modlist automatically,\n"
+            "check out SSE Auto Translator on Nexus Mods!"
         )
+        message_box.setStandardButtons(
+            qtw.QMessageBox.StandardButton.Ok
+            | qtw.QMessageBox.StandardButton.Open
+        )
+        btn = message_box.button(qtw.QMessageBox.StandardButton.Open)
+        btn.setText("Open SSE-AT modpage on Nexus Mods")
+        btn.clicked.disconnect()
+        btn.clicked.connect(
+            lambda: os.startfile(
+                "https://www.nexusmods.com/skyrimspecialedition/mods/111491"
+            )
+        )
+
+        utils.apply_dark_titlebar(message_box)
+        message_box.exec()
 
     def file_thread(self):
         """
